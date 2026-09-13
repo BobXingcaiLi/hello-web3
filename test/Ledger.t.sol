@@ -58,4 +58,16 @@ contract LedgerTest is Test {
 
         assertEq(ledger.balances(alice), amount);
     }
+
+    function testFuzz_WithdrawReducesBalance(uint256 amount) public {
+        uint256 depositAmount = 10 ether;
+        vm.prank(alice);
+        ledger.deposit{value: depositAmount}();
+        vm.assume(amount > 0 && amount <= depositAmount);
+        
+        vm.prank(alice);
+        ledger.withdraw(amount);
+
+        assertEq(ledger.balances(alice), depositAmount - amount);
+    }
 }
