@@ -47,4 +47,15 @@ contract LedgerTest is Test {
 
         ledger.deposit{value: 1 ether}();
     }
+
+    function testFuzz_DepositUpdatesBalance(uint256 amount) public {
+        // 1. 这里需要限制 amount 的范围，为什么？
+        //    提示：alice 只有 vm.deal 给的 10 ether，如果 amount 比这个还大会怎样？
+        //    用 vm.assume(...) 来过滤掉不合理的输入
+        vm.assume(amount > 0 && amount <= alice.balance);
+        vm.prank(alice);
+        ledger.deposit{value: amount}();
+
+        assertEq(ledger.balances(alice), amount);
+    }
 }
