@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import {Test} from "forge-std/Test.sol";
 import {Ledger} from "../src/Ledger.sol";
+import {Attacker} from "./Attacker.sol";
 
 contract LedgerTest is Test {
     Ledger public ledger;
@@ -69,5 +70,23 @@ contract LedgerTest is Test {
         ledger.withdraw(amount);
 
         assertEq(ledger.balances(alice), depositAmount - amount);
+    }
+
+    function test_ReentrancyAttackFails() public {
+        // get someone putting some ETH into the Ledger contract first
+        address bob = address(0x2);
+        vm.deal(bob, 5 ether);
+        vm.prank(bob);
+        ledger.deposit{value: 5 ether}();
+        
+        // 1. 部署攻击合约
+        Attacker attacker = new Attacker(ledger);
+
+        // 2. 给攻击合约一些初始 ETH，方便它调用 deposit
+        vm.deal(address(attacker), 1 ether);
+
+        // 3. 调用攻击函数，尝试发起重入攻击
+        vm.expectRevert(); // 预期攻击会失败，因为 Ledger 合约已经防御了重入攻击
+        attacker.attack{value: 1 ether}();
     }
 }
